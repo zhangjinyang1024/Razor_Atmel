@@ -66,7 +66,7 @@ typedef struct
 * Constants
 ******************************************************************************/
 #define LED_INIT_MSG_TIMEOUT            (u32)1000     /* Time in ms for init message to send */
-
+#define COLOR_CYCLE_TIME                (u16)60       /* Time to hold each color */
 
 /******************************************************************************
 * Function Declarations
