@@ -61,7 +61,7 @@ Variable names shall start with "UserApp1_" and be declared as static.
 static fnCode_type UserApp1_StateMachine;            /* The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                      /* Timeout counter used across states */
 
-static u8 UserApp_au8UserInputBuffer[U16_USER_INPUT_BUFFER_SIZE  ]; 
+static u8 UserApp_au8UserInputBuffer[1]; 
 /**********************************************************************************************************************
 Function Definitions
 **********************************************************************************************************************/
@@ -88,10 +88,7 @@ Promises:
 */
 void UserApp1Initialize(void)
 {       
-  for(u16 i = 0; i < U16_USER_INPUT_BUFFER_SIZE  ; i++)
-  {
-    UserApp_au8UserInputBuffer[i] = 0;
-  }
+
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -148,7 +145,8 @@ static void UserPrintNumber(u32 u32Number_)
   u8 u8Index1;
   u8 temp;
   
- 
+  DebugLineFeed(); 
+  
   u32Number1=u32Number_;
   
   
@@ -209,40 +207,51 @@ static void UserPrintNumber(u32 u32Number_)
 
 static void UserApp1SM_Idle()
 {
-  static u8 u8CharCount=0;
+  static u8 au8String[]="abcjasonabc";
   static u8 u8Index=0;
-  static u8 u8Index1=0;
-  static u8 au8String[]="abcjason";
+  static u8 u8Counter=0;
   static u8 u8CorrectNumber=0;
- 
-  if(WasButtonPressed(BUTTON0))
+  static u8 au8Compare[sizeof(au8String)];
+  static bool bCompareFlag=FALSE;
+  
+  
+  /*input the character*/
+  u8Counter=DebugScanf(UserApp_au8UserInputBuffer);
+  if(u8Counter==1)
   {
-    ButtonAcknowledge(BUTTON0);
-    DebugLineFeed();
-    u8CharCount = DebugScanf(UserApp_au8UserInputBuffer);
-    UserApp_au8UserInputBuffer[u8CharCount]='\0';
-    //UserPrintNumber(125);
-   
-    for(u8Index=0;u8Index<(u8CharCount-1);u8Index++)
-    {
-      for(u8Index1=0;u8Index1<(sizeof(au8String)-1);u8Index1++)
+    au8Compare[u8Index]=UserApp_au8UserInputBuffer[0];
+    u8Index++;
+  }
+  if(u8Index==sizeof(au8String)-1)
+  {
+    u8Index=0;
+    bCompareFlag=TRUE;
+  }
+
+  /*Compare these input  characters  with real characters*/ 
+  if(bCompareFlag)
+  {
+      for(u8Index=0;u8Index<(sizeof(au8String)-1);u8Index++)
       {
-        if(UserApp_au8UserInputBuffer[u8Index+u8Index1]!=au8String[u8Index1])
+        if(au8Compare[u8Index]!=au8String[u8Index])
         {
-          break;
+           for(u8 i=0;i<(sizeof(au8String)-1);i++)
+           {
+             au8Compare[i]=au8Compare[i+1];
+           }
+           break;
         }
       }
-      if(u8Index1==(sizeof(au8String)-1))
+      if(u8Index==(sizeof(au8String)-1))
       {
-        u8Index=(u8Index1+u8Index-1);
         u8CorrectNumber++;
-        DebugPrintf(au8String);
         DebugLineFeed();
+        DebugPrintf(au8String);
         UserPrintNumber(u8CorrectNumber);
-      } 
-    } 
-  }
-  u8CorrectNumber=0;
+      }
+      bCompareFlag=FALSE;
+      u8Index=sizeof(au8String)-2;
+  } 
 } /* end UserApp1SM_Idle() */
 #if 0
 /*-------------------------------------------------------------------------------------------------------------------*/
