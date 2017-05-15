@@ -52,7 +52,8 @@ extern volatile u32 G_u32ApplicationFlags;             /* From main.c */
 extern volatile u32 G_u32SystemTime1ms;                /* From board-specific source file */
 extern volatile u32 G_u32SystemTime1s;                 /* From board-specific source file */
 
-
+extern u8 G_au8DebugScanfBuffer[];                     /* From debug.c */
+extern u8 G_u8DebugScanfCharCount;                     /* From debug.c */
 /***********************************************************************************************************************
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_" and be declared as static.
@@ -60,7 +61,7 @@ Variable names shall start with "UserApp1_" and be declared as static.
 static fnCode_type UserApp1_StateMachine;            /* The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                      /* Timeout counter used across states */
 
-
+static u8 UserApp_au8UserInputBuffer[U16_USER_INPUT_BUFFER_SIZE  ]; 
 /**********************************************************************************************************************
 Function Definitions
 **********************************************************************************************************************/
@@ -86,8 +87,11 @@ Promises:
   - 
 */
 void UserApp1Initialize(void)
-{
- 
+{       
+  for(u16 i = 0; i < U16_USER_INPUT_BUFFER_SIZE  ; i++)
+  {
+    UserApp_au8UserInputBuffer[i] = 0;
+  }
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -134,11 +138,112 @@ State Machine Function Definitions
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Wait for ??? */
-static void UserApp1SM_Idle(void)
+static void UserPrintNumber(u32 u32Number_)
 {
+  static u32 u32Number1;
+  static u8 au8OutputPattern[128];
+  u8 u8Count=0;
+  u8 u8Count1=0;
+  u8 u8Index;
+  u8 u8Index1;
+  u8 temp;
+  
+ 
+  u32Number1=u32Number_;
+  
+  
+  while(u32Number_)
+  {
+    u32Number_=u32Number_/10;
+    u8Count++;
+  }
+  
+ 
+  for(u8Index=0;u8Index<(2+u8Count);u8Index++)
+  {
+    au8OutputPattern[u8Index]='*';  
+  }
+  au8OutputPattern[u8Index]='\n';
+  u8Index++;
+  au8OutputPattern[u8Index]='\r';
+  u8Index++;
+  au8OutputPattern[u8Index]='*';
+  u8Index++;
+  
+  while(u32Number1)
+  {
+     au8OutputPattern[u8Index]=((u32Number1%10)+0x30);
+     u32Number1=u32Number1/10;
+     u8Index++;
+     u8Count1++;
+  }
+  
+  
+  
+  for(u8 i=0;i<u8Count1/2;i++)
+  {
+      temp=au8OutputPattern[i+u8Index-u8Count1];
+      au8OutputPattern[i+u8Index-u8Count1]=au8OutputPattern[u8Index-i-1];
+      au8OutputPattern[u8Index-i-1]=temp;
+  }
 
-} /* end UserApp1SM_Idle() */
+
+  au8OutputPattern[u8Index]='*';
+  u8Index++;
+  au8OutputPattern[u8Index]='\n';
+  u8Index++;
+  au8OutputPattern[u8Index]='\r';
+  u8Index1=u8Index+1;
+  for(u8Index=u8Index1;u8Index<(u8Index1+2+u8Count);u8Index++)
+  {
+     au8OutputPattern[u8Index]='*';  
+  }
+  au8OutputPattern[u8Index]='\n';
+  u8Index++;
+  au8OutputPattern[u8Index]='\r';
+  u8Index++;
+  au8OutputPattern[u8Index]='\0';
     
+  DebugPrintf(au8OutputPattern);
+}
+
+static void UserApp1SM_Idle()
+{
+  static u8 u8CharCount=0;
+  static u8 u8Index=0;
+  static u8 u8Index1=0;
+  static u8 au8String[]="abcjason";
+  static u8 u8CorrectNumber=0;
+ 
+  if(WasButtonPressed(BUTTON0))
+  {
+    ButtonAcknowledge(BUTTON0);
+    DebugLineFeed();
+    u8CharCount = DebugScanf(UserApp_au8UserInputBuffer);
+    UserApp_au8UserInputBuffer[u8CharCount]='\0';
+    //UserPrintNumber(125);
+   
+    for(u8Index=0;u8Index<(u8CharCount-1);u8Index++)
+    {
+      for(u8Index1=0;u8Index1<(sizeof(au8String)-1);u8Index1++)
+      {
+        if(UserApp_au8UserInputBuffer[u8Index+u8Index1]!=au8String[u8Index1])
+        {
+          break;
+        }
+      }
+      if(u8Index1==(sizeof(au8String)-1))
+      {
+        u8Index=(u8Index1+u8Index-1);
+        u8CorrectNumber++;
+        DebugPrintf(au8String);
+        DebugLineFeed();
+        UserPrintNumber(u8CorrectNumber);
+      } 
+    } 
+  }
+  u8CorrectNumber=0;
+} /* end UserApp1SM_Idle() */
 #if 0
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Handle an error */
